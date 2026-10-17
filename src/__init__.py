@@ -1,5 +1,6 @@
 from src.utils.settings import database, schemas
 from src.routes.jobs_rts import jobs_rts
+from src.utils import db_postgres
 from flask_migrate import Migrate
 from flask import Flask
 import logging
@@ -19,6 +20,8 @@ def create_app() -> Flask:
     app.register_blueprint(jobs_rts)
     logger.info(f"Registered blueprints: {app.blueprints.keys()}")
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = None
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_postgres.get_uri()
+
+    Migrate(app, database, directory='migrations')
 
     return app
