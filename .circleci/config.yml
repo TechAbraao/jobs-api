@@ -4,20 +4,19 @@ jobs:
   test:
     docker:
       - image: cimg/python:3.12
-    working_directory: ~/jobs
+    working_directory: ~/jobs-api
     steps:
       - checkout
       - run:
           name: Install dependencies
           command: |
             python -m pip install --upgrade pip
-            pip install -e .
+            python -m pip install -r requirements.txt
       - run:
           name: Run tests
-          command: pytest -q
+          command: python -m pytest -q
 
 workflows:
-  version: 2
   test_workflow:
     jobs:
       - test

@@ -12,21 +12,27 @@ Execute os comandos a partir da raiz do projeto.
 	cp env.template .env
 	```
 
-2. Crie e ative o ambiente virtual, instale as dependências e inicie o container do banco:
+2. Crie e ajuste o arquivo `.env`, depois crie o ambiente virtual e instale as dependências:
 
 	```bash
-	python3 -m venv .venv
-	source .venv/bin/activate
-	pip install -r requirements.txt
-	docker compose -f infra/composes/docker-compose-dev.yml --env-file .env up -d
+	cp env.template .env
+	make setup
 	```
 
-3. A imagem oficial do PostgreSQL cria o banco indicado por `POSTGRES_DB` **somente quando inicializa um diretório de dados vazio**. Se o volume `postgres_data` já existia, mudar `.env` ou recriar o container não cria outro banco. Nesse caso, crie o banco desejado no PostgreSQL ou configure a aplicação para apontar para um banco que já exista.
+	O Makefile usa `.venv/bin/python` por padrão. Se necessário, sobrescreva o executável, por exemplo: `make test PYTHON=python3`.
+
+3. Inicie o PostgreSQL:
+
+	```bash
+	make db-up
+	```
+
+   A imagem oficial do PostgreSQL cria o banco indicado por `POSTGRES_DB` **somente quando inicializa um diretório de dados vazio**. Se o volume `postgres_data` já existia, mudar `.env` ou recriar o container não cria outro banco. Nesse caso, crie o banco desejado no PostgreSQL ou configure a aplicação para apontar para um banco que já exista.
 
 4. Com o PostgreSQL pronto e o banco criado, aplique as migrações versionadas para criar ou atualizar as tabelas:
 
 	```bash
-	flask --app src.app db upgrade
+	make db-upgrade
 	```
 
 	Este repositório já contém a migração inicial da tabela `jobs`; no uso normal, basta executar `db upgrade`. O banco PostgreSQL precisa existir antes desse comando: Flask-Migrate/Alembic cria as tabelas dentro do banco, mas não cria o próprio banco.
@@ -34,18 +40,18 @@ Execute os comandos a partir da raiz do projeto.
 5. Inicie a API:
 
 	```bash
-	flask --app src.app run
+	make run
 	```
 
-Se o comando `flask` não for encontrado, confirme que o ambiente virtual está ativado ou execute pelo caminho do ambiente: `.venv/bin/flask --app src.app db upgrade` e `.venv/bin/flask --app src.app run`.
+Veja todos os comandos disponíveis com `make help`. Entre os principais estão `make test`, `make db-logs` e `make db-down` (este último para os containers sem apagar o volume do banco).
 
 #### Criar migrações para alterações futuras
 
 Quando um modelo for alterado, gere uma nova migração, revise o arquivo criado em `migrations/versions/` e aplique-a:
 
 ```bash
-flask --app src.app db migrate -m "descreva a alteracao"
-flask --app src.app db upgrade
+make db-migrate MSG="descreva a alteracao"
+make db-upgrade
 ```
 
 `db migrate` gera o arquivo de migração a partir das diferenças detectadas nos modelos; `db upgrade` executa as migrações pendentes. `db init` só é necessário para inicializar o diretório de migrações em um projeto que ainda não o possui — este repositório já tem `migrations/`, então não execute esse comando aqui.
