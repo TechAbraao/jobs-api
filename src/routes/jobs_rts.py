@@ -79,7 +79,7 @@ def get_jobs():
     }), 200
 
 
-@jobs_rts.route("/<int:job_id>", methods=["GET"])
+@jobs_rts.route("/<uuid:job_id>", methods=["GET"])
 def get_job(job_id):
     try:
         job = jobs_ctr.get_job(job_id)
@@ -91,7 +91,7 @@ def get_job(job_id):
     return jsonify({"job": job.to_dict()}), 200
 
 
-@jobs_rts.route("/<int:job_id>", methods=["PUT", "PATCH"])
+@jobs_rts.route("/<uuid:job_id>", methods=["PUT", "PATCH"])
 def update_job(job_id):
     body = _json_body()
     if body is None:
@@ -114,7 +114,7 @@ def update_job(job_id):
     return jsonify({"job": job.to_dict()}), 200
 
 
-@jobs_rts.route("/<int:job_id>", methods=["DELETE"])
+@jobs_rts.route("/<uuid:job_id>", methods=["DELETE"])
 def delete_job(job_id):
     try:
         job = jobs_ctr.get_job(job_id)

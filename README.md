@@ -1,5 +1,5 @@
-## Jobs API
-
+## Jobs API @ FATEC-ZL
+ 
 API REST para cadastro e consulta de vagas, construída com Flask, SQLAlchemy e PostgreSQL.
 
 ### Configuração local
@@ -54,17 +54,17 @@ Se as variáveis do PostgreSQL não estiverem configuradas, a aplicação usa `s
 
 ### API
 
-As respostas são JSON. Campos obrigatórios de uma vaga: `title`, `description`, `company` e `location`. `salary` é opcional e não pode ser negativo.
+As respostas são JSON. Cada vaga recebe um identificador UUID gerado pela API. Campos obrigatórios: `title`, `description`, `company` e `location`. `salary` é opcional e não pode ser negativo. Use o UUID retornado na criação para consultar, atualizar ou remover a vaga.
 
 | Método | Caminho | Descrição |
 | --- | --- | --- |
 | `GET` | `/health` | Verifica a aplicação e a conexão com o banco. |
 | `GET` | `/jobs` | Lista vagas, com filtros e paginação. |
 | `POST` | `/jobs` | Cadastra uma vaga. |
-| `GET` | `/jobs/<id>` | Consulta uma vaga. |
-| `PUT` | `/jobs/<id>` | Substitui os campos obrigatórios da vaga. |
-| `PATCH` | `/jobs/<id>` | Atualiza parcialmente a vaga. |
-| `DELETE` | `/jobs/<id>` | Remove a vaga. |
+| `GET` | `/jobs/<uuid>` | Consulta uma vaga. |
+| `PUT` | `/jobs/<uuid>` | Substitui os campos obrigatórios da vaga. |
+| `PATCH` | `/jobs/<uuid>` | Atualiza parcialmente a vaga. |
+| `DELETE` | `/jobs/<uuid>` | Remove a vaga. |
 
 `GET /jobs` aceita `page` (padrão 1), `per_page` (padrão 20, máximo 100), `q` (busca em título e descrição), `company`, `location`, `min_salary` e `max_salary`.
 

@@ -1,6 +1,10 @@
+import uuid
+
 import pytest
+from sqlalchemy.exc import SQLAlchemyError
 
 from src import create_app
+from src.controllers import jobs_ctr
 from src.utils.settings import database
 
 
@@ -39,7 +43,7 @@ def test_create_and_get_job(client):
 
     assert response.status_code == 201
     created = response.get_json()["job"]
-    assert created["id"] > 0
+    assert str(uuid.UUID(created["id"])) == created["id"]
     assert created["title"] == "Backend Developer"
     assert created["salary"] == 9000
     assert created["created_at"]
@@ -87,9 +91,9 @@ def test_validation_and_not_found_responses(client):
     negative_salary = client.post("/jobs", json=job_payload(salary=-1))
     assert negative_salary.status_code == 400
 
-    empty_patch = client.patch("/jobs/1", json={})
+    empty_patch = client.patch(f"/jobs/{uuid.uuid4()}", json={})
     assert empty_patch.status_code == 400
-    assert client.get("/jobs/999").status_code == 404
+    assert client.get(f"/jobs/{uuid.uuid4()}").status_code == 404
 
 
 def test_health_check(client):
@@ -102,3 +106,97 @@ def test_invalid_list_parameters(client):
     assert client.get("/jobs?page=0").status_code == 400
     assert client.get("/jobs?per_page=101").status_code == 400
     assert client.get("/jobs?min_salary=20&max_salary=10").status_code == 400
+
+
+@pytest.mark.parametrize(
+    ("parameter", "expected_title"),
+    [
+        ("q=backend", "Backend Developer"),
+        ("q=distributed", "Data Analyst"),
+        ("company=example", "Backend Developer"),
+        ("location=toronto", "Data Analyst"),
+        ("min_salary=8000", "Backend Developer"),
+        ("max_salary=6000", "Data Analyst"),
+    ],
+)
+def test_list_filters(client, parameter, expected_title):
+    client.post("/jobs", json=job_payload())
+    client.post(
+        "/jobs",
+        json=job_payload(
+            title="Data Analyst",
+            description="Analyze distributed datasets",
+            company="Other Co.",
+            location="Toronto",
+            salary=5000,
+        ),
+    )
+
+    response = client.get(f"/jobs?{parameter}")
+
+    assert response.status_code == 200
+    assert [job["title"] for job in response.get_json()["jobs"]] == [expected_title]
+
+
+def test_list_paginates_and_returns_empty_page(client):
+    client.post("/jobs", json=job_payload(title="First"))
+    client.post("/jobs", json=job_payload(title="Second"))
+    client.post("/jobs", json=job_payload(title="Third"))
+
+    first_page = client.get("/jobs?page=1&per_page=2").get_json()
+    second_page = client.get("/jobs?page=2&per_page=2").get_json()
+    empty_page = client.get("/jobs?page=5&per_page=2").get_json()
+
+    assert len(first_page["jobs"]) == 2
+    assert first_page["pagination"] == {"page": 1, "per_page": 2, "total": 3, "pages": 2}
+    assert len(second_page["jobs"]) == 1
+    assert empty_page["jobs"] == []
+    assert empty_page["pagination"]["pages"] == 2
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        None,
+        [],
+        {"title": "", "description": "desc", "company": "company", "location": "here"},
+        {"title": "Title", "description": "desc", "company": "company", "location": "here", "extra": True},
+        {"title": "Title", "description": "desc", "company": "company", "location": "here", "salary": "not-a-number"},
+    ],
+)
+def test_create_rejects_invalid_payloads(client, body):
+    if body is None:
+        response = client.post("/jobs", data="not-json", content_type="application/json")
+    else:
+        response = client.post("/jobs", json=body)
+
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+def test_put_requires_all_required_fields(client):
+    created = client.post("/jobs", json=job_payload()).get_json()["job"]
+
+    response = client.put(f"/jobs/{created['id']}", json={"title": "Incomplete replacement"})
+
+    assert response.status_code == 400
+    assert "details" in response.get_json()
+
+
+def test_non_uuid_job_path_returns_json_404(client):
+    response = client.get("/jobs/not-a-uuid")
+
+    assert response.status_code == 404
+    assert response.get_json() == {"error": "Recurso não encontrado."}
+
+
+def test_list_database_error_returns_json_500(client, monkeypatch):
+    def fail_list(**_kwargs):
+        raise SQLAlchemyError("database unavailable")
+
+    monkeypatch.setattr(jobs_ctr, "list_jobs", fail_list)
+
+    response = client.get("/jobs")
+
+    assert response.status_code == 500
+    assert response.get_json() == {"error": "Não foi possível consultar as vagas."}

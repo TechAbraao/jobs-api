@@ -1,10 +1,12 @@
+import uuid
+
 from src.utils.settings import database as db
 
 
 class JobsMdl(db.Model):
     __tablename__ = "jobs"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     company = db.Column(db.String(255), nullable=False)
@@ -15,7 +17,7 @@ class JobsMdl(db.Model):
 
     def to_dict(self) -> dict[str, object]:
         return {
-            "id": self.id,
+            "id": str(self.id),
             "title": self.title,
             "description": self.description,
             "company": self.company,

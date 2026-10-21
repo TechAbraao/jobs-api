@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import or_
 
 from src.models.jobs_mdl import JobsMdl
@@ -50,7 +52,7 @@ def create_job(data: dict[str, object]) -> JobsMdl:
 	return job
 
 
-def get_job(job_id: int) -> JobsMdl | None:
+def get_job(job_id: uuid.UUID) -> JobsMdl | None:
 	return database.session.get(JobsMdl, job_id)
 
 
