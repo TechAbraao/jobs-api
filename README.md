@@ -60,7 +60,7 @@ Se as variáveis do PostgreSQL não estiverem configuradas, a aplicação usa `s
 
 ### API
 
-As respostas são JSON. Cada vaga recebe um identificador UUID gerado pela API. Campos obrigatórios: `title`, `description`, `company` e `location`. `salary` é opcional e não pode ser negativo. Use o UUID retornado na criação para consultar, atualizar ou remover a vaga.
+As respostas são JSON. Cada vaga recebe um identificador UUID gerado pela API. Campos obrigatórios: `title`, `description`, `company`, `location`, `url` (URL HTTP/HTTPS da vaga) e `platform` (plataforma que publicou/distribui a vaga). `salary` é opcional e não pode ser negativo. Uma mesma empresa não pode cadastrar duas vagas com o mesmo título; a comparação ignora maiúsculas/minúsculas e espaços nas extremidades. Em caso de duplicidade, a API retorna `409 Conflict`. Use o UUID retornado na criação para consultar, atualizar ou remover a vaga.
 
 | Método | Caminho | Descrição |
 | --- | --- | --- |
@@ -82,6 +82,8 @@ Exemplo de corpo para `POST /jobs`:
 	"description": "Desenvolvimento de serviços web",
 	"company": "Exemplo Tecnologia",
 	"location": "São Paulo, SP",
+	"url": "https://careers.example.com/vagas/desenvolvedor-python",
+	"platform": "Gupy",
 	"salary": 8500
 }
 ```

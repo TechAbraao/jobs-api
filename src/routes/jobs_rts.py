@@ -34,6 +34,8 @@ def create_job():
         job = jobs_ctr.create_job(data)
     except ValidationError as error:
         return _error("Dados inválidos.", 400, validation_details(error))
+    except jobs_ctr.DuplicateJobError:
+        return _error("Esta empresa já possui uma vaga com esse título.", 409)
     except SQLAlchemyError:
         current_app.logger.exception("Failed to create job")
         return _error("Não foi possível salvar a vaga.", 500)
@@ -108,6 +110,8 @@ def update_job(job_id):
         if job is None:
             return _error("Vaga não encontrada.", 404)
         job = jobs_ctr.update_job(job, data)
+    except jobs_ctr.DuplicateJobError:
+        return _error("Esta empresa já possui uma vaga com esse título.", 409)
     except SQLAlchemyError:
         current_app.logger.exception("Failed to update job %s", job_id)
         return _error("Não foi possível atualizar a vaga.", 500)

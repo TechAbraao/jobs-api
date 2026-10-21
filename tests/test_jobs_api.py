@@ -32,6 +32,8 @@ def job_payload(**overrides):
         "description": "Build APIs with Python",
         "company": "Example Inc.",
         "location": "Remote",
+        "url": "https://jobs.example.com/backend-developer",
+        "platform": "LinkedIn",
         "salary": 9000,
     }
     payload.update(overrides)
@@ -45,6 +47,8 @@ def test_create_and_get_job(client):
     created = response.get_json()["job"]
     assert str(uuid.UUID(created["id"])) == created["id"]
     assert created["title"] == "Backend Developer"
+    assert created["url"] == "https://jobs.example.com/backend-developer"
+    assert created["platform"] == "LinkedIn"
     assert created["salary"] == 9000
     assert created["created_at"]
 
@@ -174,6 +178,33 @@ def test_create_rejects_invalid_payloads(client, body):
     assert "error" in response.get_json()
 
 
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"url": "not-a-url"},
+        {"url": "ftp://jobs.example.com/job"},
+        {"platform": ""},
+        {"platform": "x" * 101},
+    ],
+)
+def test_create_rejects_invalid_url_or_platform(client, changes):
+    response = client.post("/jobs", json=job_payload(**changes))
+
+    assert response.status_code == 400
+    assert "details" in response.get_json()
+
+
+@pytest.mark.parametrize("field", ["url", "platform"])
+def test_create_requires_url_and_platform(client, field):
+    payload = job_payload()
+    del payload[field]
+
+    response = client.post("/jobs", json=payload)
+
+    assert response.status_code == 400
+    assert field in response.get_json()["details"]
+
+
 def test_put_requires_all_required_fields(client):
     created = client.post("/jobs", json=job_payload()).get_json()["job"]
 
@@ -181,6 +212,35 @@ def test_put_requires_all_required_fields(client):
 
     assert response.status_code == 400
     assert "details" in response.get_json()
+
+
+def test_same_company_cannot_create_duplicate_title(client):
+    first = client.post("/jobs", json=job_payload())
+    duplicate = client.post(
+        "/jobs",
+        json=job_payload(title="  backend developer ", company=" example inc. "),
+    )
+
+    assert first.status_code == 201
+    assert duplicate.status_code == 409
+    assert duplicate.get_json() == {"error": "Esta empresa já possui uma vaga com esse título."}
+
+
+def test_same_title_is_allowed_for_another_company(client):
+    assert client.post("/jobs", json=job_payload()).status_code == 201
+    response = client.post("/jobs", json=job_payload(company="Different Company"))
+
+    assert response.status_code == 201
+
+
+def test_update_cannot_duplicate_another_job_at_same_company(client):
+    client.post("/jobs", json=job_payload(title="Backend Developer"))
+    other = client.post("/jobs", json=job_payload(title="Data Analyst")).get_json()["job"]
+
+    response = client.patch(f"/jobs/{other['id']}", json={"title": "backend developer"})
+
+    assert response.status_code == 409
+    assert response.get_json() == {"error": "Esta empresa já possui uma vaga com esse título."}
 
 
 def test_non_uuid_job_path_returns_json_404(client):

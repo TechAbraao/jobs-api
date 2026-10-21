@@ -1,9 +1,24 @@
 import uuid
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_, select
+from sqlalchemy.exc import IntegrityError
 
 from src.models.jobs_mdl import JobsMdl
 from src.utils.settings import database
+
+
+class DuplicateJobError(Exception):
+	"""Raised when a company already has a job with the same title."""
+
+
+def has_duplicate_job(company: str, title: str, *, exclude_id: uuid.UUID | None = None) -> bool:
+	statement = select(JobsMdl.id).where(
+		func.lower(func.trim(JobsMdl.company)) == company.strip().lower(),
+		func.lower(func.trim(JobsMdl.title)) == title.strip().lower(),
+	)
+	if exclude_id is not None:
+		statement = statement.where(JobsMdl.id != exclude_id)
+	return database.session.scalar(statement) is not None
 
 
 def list_jobs(
@@ -46,9 +61,16 @@ def list_jobs(
 
 
 def create_job(data: dict[str, object]) -> JobsMdl:
+	data = {**data, "company": str(data["company"]).strip(), "title": str(data["title"]).strip()}
+	if has_duplicate_job(data["company"], data["title"]):
+		raise DuplicateJobError
 	job = JobsMdl(**data)
 	database.session.add(job)
-	database.session.commit()
+	try:
+		database.session.commit()
+	except IntegrityError as error:
+		database.session.rollback()
+		raise DuplicateJobError from error
 	return job
 
 
@@ -57,9 +79,21 @@ def get_job(job_id: uuid.UUID) -> JobsMdl | None:
 
 
 def update_job(job: JobsMdl, data: dict[str, object]) -> JobsMdl:
+	company = str(data.get("company", job.company)).strip()
+	title = str(data.get("title", job.title)).strip()
+	if has_duplicate_job(company, title, exclude_id=job.id):
+		raise DuplicateJobError
+	if "company" in data:
+		data["company"] = company
+	if "title" in data:
+		data["title"] = title
 	for field, value in data.items():
 		setattr(job, field, value)
-	database.session.commit()
+	try:
+		database.session.commit()
+	except IntegrityError as error:
+		database.session.rollback()
+		raise DuplicateJobError from error
 	return job
 
 
