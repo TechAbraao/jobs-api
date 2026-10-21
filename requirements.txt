@@ -11,11 +11,13 @@ Jinja2==3.1.6
 Mako==1.4.3
 MarkupSafe==3.0.4
 marshmallow==4.3.1
+marshmallow-sqlalchemy>=1.4,<2
 packaging==26.3
 pluggy==1.7.0
 Pygments==2.21.0
 pytest==9.1.1
 python-dotenv==1.2.4
+psycopg[binary]>=3.2,<4
 SQLAlchemy==2.1.4
 typing_extensions==4.16.0
 Werkzeug==3.1.9

@@ -1,5 +1,6 @@
 from src.utils.settings import database as db
 
+
 class JobsMdl(db.Model):
     __tablename__ = "jobs"
 
@@ -11,3 +12,15 @@ class JobsMdl(db.Model):
     salary = db.Column(db.Float, nullable=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "company": self.company,
+            "location": self.location,
+            "salary": self.salary,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

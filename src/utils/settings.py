@@ -4,5 +4,5 @@ from flask_sqlalchemy import SQLAlchemy
 """ Database (Flask-SQLAlchemy Lib) """
 database = SQLAlchemy()
 
-""" Schemas (Flask-Marshmallow Lib) """
-schemas = Marshmallow()
+"""Marshmallow extension (kept separate from the src.schemas package name)."""
+marshmallow_ext = Marshmallow()
