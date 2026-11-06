@@ -136,6 +136,36 @@ ENV/
 env.bak/
 venv.bak/
 
+# Node / React Native / Expo
+node_modules/
+.npm/
+.npx/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.expo/
+.expo-shared/
+.expo-device/
+.expo-types/
+.web-build/
+metro-cache/
+.cache/
+.temp/
+*.tsbuildinfo
+android/.gradle/
+android/app/build/
+android/build/
+ios/Pods/
+ios/build/
+ios/DerivedData/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
 # Spyder project settings
 .spyderproject
 .spyproject

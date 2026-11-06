@@ -14,6 +14,13 @@ class JobSchema(Schema):
 	url = fields.Url(required=True, schemes={"http", "https"}, validate=validate.Length(max=2048))
 	platform = fields.String(required=True, validate=validate.Length(min=1, max=100))
 	salary = fields.Float(allow_none=True, validate=validate.Range(min=0))
+	modality = fields.String(allow_none=True, validate=validate.Length(max=50))
+	category = fields.String(allow_none=True, validate=validate.Length(max=100))
+	contract = fields.String(allow_none=True, validate=validate.Length(max=50))
+	level = fields.String(allow_none=True, validate=validate.Length(max=50))
+	requirements = fields.List(fields.String(validate=validate.Length(min=1)), allow_none=True)
+	benefits = fields.String(allow_none=True, validate=validate.Length(max=2000))
+	tempo = fields.String(allow_none=True, validate=validate.Length(max=50))
 
 
 class JobUpdateSchema(JobSchema):
@@ -25,6 +32,14 @@ class JobUpdateSchema(JobSchema):
 	location = fields.String(validate=validate.Length(min=1, max=255))
 	url = fields.Url(schemes={"http", "https"}, validate=validate.Length(max=2048))
 	platform = fields.String(validate=validate.Length(min=1, max=100))
+	salary = fields.Float(allow_none=True, validate=validate.Range(min=0))
+	modality = fields.String(allow_none=True, validate=validate.Length(max=50))
+	category = fields.String(allow_none=True, validate=validate.Length(max=100))
+	contract = fields.String(allow_none=True, validate=validate.Length(max=50))
+	level = fields.String(allow_none=True, validate=validate.Length(max=50))
+	requirements = fields.List(fields.String(validate=validate.Length(min=1)), allow_none=True)
+	benefits = fields.String(allow_none=True, validate=validate.Length(max=2000))
+	tempo = fields.String(allow_none=True, validate=validate.Length(max=50))
 
 
 def validation_details(error: ValidationError) -> dict[str, list[str]]:

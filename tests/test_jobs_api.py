@@ -35,6 +35,13 @@ def job_payload(**overrides):
         "url": "https://jobs.example.com/backend-developer",
         "platform": "LinkedIn",
         "salary": 9000,
+        "modality": "Remote",
+        "category": "Engineering",
+        "contract": "CLT",
+        "level": "Mid",
+        "requirements": ["Python", "Flask"],
+        "benefits": "Health plan and meal voucher",
+        "tempo": "published 24h ago",
     }
     payload.update(overrides)
     return payload
@@ -50,6 +57,13 @@ def test_create_and_get_job(client):
     assert created["url"] == "https://jobs.example.com/backend-developer"
     assert created["platform"] == "LinkedIn"
     assert created["salary"] == 9000
+    assert created["modality"] == "Remote"
+    assert created["category"] == "Engineering"
+    assert created["contract"] == "CLT"
+    assert created["level"] == "Mid"
+    assert created["requirements"] == ["Python", "Flask"]
+    assert created["benefits"] == "Health plan and meal voucher"
+    assert created["tempo"] == "published 24h ago"
     assert created["created_at"]
 
     detail = client.get(f"/jobs/{created['id']}")
@@ -74,17 +88,45 @@ def test_patch_put_and_delete_job(client):
     created = client.post("/jobs", json=job_payload()).get_json()["job"]
     job_id = created["id"]
 
-    patched = client.patch(f"/jobs/{job_id}", json={"salary": 10000}).get_json()["job"]
+    patched = client.patch(f"/jobs/{job_id}", json={"salary": 10000, "modality": "Hybrid"}).get_json()["job"]
     assert patched["salary"] == 10000
+    assert patched["modality"] == "Hybrid"
     assert patched["title"] == "Backend Developer"
 
     replaced = client.put(f"/jobs/{job_id}", json=job_payload(title="Platform Engineer"))
     assert replaced.status_code == 200
     assert replaced.get_json()["job"]["title"] == "Platform Engineer"
+    assert replaced.get_json()["job"]["category"] == "Engineering"
 
     deleted = client.delete(f"/jobs/{job_id}")
     assert deleted.status_code == 204
     assert client.get(f"/jobs/{job_id}").status_code == 404
+
+
+def test_create_accepts_and_returns_english_fields(client):
+    response = client.post(
+        "/jobs",
+        json=job_payload(
+            title="Platform Engineer",
+            modality="Hybrid",
+            category="Platform",
+            contract="PJ",
+            level="Senior",
+            requirements=["Kubernetes", "AWS"],
+            benefits="Remote work stipend",
+            tempo="published 2 days ago",
+        ),
+    )
+
+    assert response.status_code == 201
+    created = response.get_json()["job"]
+    assert created["modality"] == "Hybrid"
+    assert created["category"] == "Platform"
+    assert created["contract"] == "PJ"
+    assert created["level"] == "Senior"
+    assert created["requirements"] == ["Kubernetes", "AWS"]
+    assert created["benefits"] == "Remote work stipend"
+    assert created["tempo"] == "published 2 days ago"
 
 
 def test_validation_and_not_found_responses(client):
@@ -260,3 +302,39 @@ def test_list_database_error_returns_json_500(client, monkeypatch):
 
     assert response.status_code == 500
     assert response.get_json() == {"error": "Não foi possível consultar as vagas."}
+
+
+def test_default_admin_is_created_and_can_login(client):
+    response = client.post("/auth/login", json={"username": "admin", "password": "admin"})
+
+    assert response.status_code == 200
+    body = response.get_json()["user"]
+    assert body["username"] == "admin"
+    assert body["role"] == "admin"
+
+
+def test_user_registration_login_and_favorites(client):
+    register = client.post("/auth/register", json={"username": "alice", "password": "secret123"})
+    assert register.status_code == 201
+    assert register.get_json()["user"]["username"] == "alice"
+    assert register.get_json()["user"]["role"] == "user"
+
+    login = client.post("/auth/login", json={"username": "alice", "password": "secret123"})
+    assert login.status_code == 200
+    assert login.get_json()["user"]["username"] == "alice"
+
+    duplicate = client.post("/auth/register", json={"username": "alice", "password": "another"})
+    assert duplicate.status_code == 409
+
+    created_job = client.post("/jobs", json=job_payload(title="Favorite Role", company="Favorite Co.")).get_json()["job"]
+    add_favorite = client.post("/auth/favorites", json={"username": "alice", "job_id": created_job["id"]})
+    assert add_favorite.status_code == 200
+    assert created_job["id"] in add_favorite.get_json()["user"]["favorite_jobs"]
+
+    favorite_list = client.get("/auth/favorites", query_string={"username": "alice"})
+    assert favorite_list.status_code == 200
+    assert [job["id"] for job in favorite_list.get_json()["favorite_jobs"]] == [created_job["id"]]
+
+    remove_favorite = client.delete("/auth/favorites", json={"username": "alice", "job_id": created_job["id"]})
+    assert remove_favorite.status_code == 200
+    assert remove_favorite.get_json()["user"]["favorite_jobs"] == []

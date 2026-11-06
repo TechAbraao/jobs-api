@@ -58,13 +58,71 @@ make db-upgrade
 
 Se as variáveis do PostgreSQL não estiverem configuradas, a aplicação usa `sqlite:///jobs.db` para desenvolvimento local. `DATABASE_URL` pode ser definido para fornecer uma URI diretamente.
 
+### Frontend mobile (React Native / Expo)
+
+A pasta `mobile/` contém a interface mobile que consome a API do backend. O app foi construído com Expo + React Native e usa a variável de ambiente `EXPO_PUBLIC_JOBS_API_URL` para apontar para a API REST.
+
+1. A partir da raiz do projeto, abra a pasta do app:
+
+   ```bash
+   cd mobile
+   ```
+
+2. Instale as dependências do cliente mobile:
+
+   ```bash
+   npm install
+   ```
+
+3. Configure a URL da API antes de iniciar o app:
+
+   ```bash
+   export EXPO_PUBLIC_JOBS_API_URL=http://localhost:5000
+   ```
+
+   Em um emulador Android, normalmente a API fica disponível em `http://10.0.2.2:5000`.
+
+4. Inicie o app:
+
+   ```bash
+   npm start
+   ```
+
+   Você também pode abrir diretamente:
+
+   ```bash
+   npm run android
+   npm run ios
+   npm run web
+   ```
+
+   O backend precisa estar em execução antes do app mobile iniciar. O cliente consome os endpoints da API de vagas e autenticação (`/jobs`, `/auth/register`, `/auth/login`, `/auth/favorites`, etc.).
+
+   Consulte também o README específico em `mobile/README.md` para detalhes sobre as telas e integrações da interface.
+
 ### API
 
 As respostas são JSON. Cada vaga recebe um identificador UUID gerado pela API. Campos obrigatórios: `title`, `description`, `company`, `location`, `url` (URL HTTP/HTTPS da vaga) e `platform` (plataforma que publicou/distribui a vaga). `salary` é opcional e não pode ser negativo. Uma mesma empresa não pode cadastrar duas vagas com o mesmo título; a comparação ignora maiúsculas/minúsculas e espaços nas extremidades. Em caso de duplicidade, a API retorna `409 Conflict`. Use o UUID retornado na criação para consultar, atualizar ou remover a vaga.
 
+Além disso, a API expõe autenticação básica de usuários com `username` e `password`, hash da senha, `role` (`user` ou `admin`) e suporte a favoritos por usuário. O usuário administrador padrão é criado com:
+
+```json
+{
+  "username": "admin",
+  "password": "admin"
+}
+```
+
+#### Endpoints gerais
+
 | Método | Caminho | Descrição |
 | --- | --- | --- |
 | `GET` | `/health` | Verifica a aplicação e a conexão com o banco. |
+
+#### Endpoints de vagas
+
+| Método | Caminho | Descrição |
+| --- | --- | --- |
 | `GET` | `/jobs` | Lista vagas, com filtros e paginação. |
 | `POST` | `/jobs` | Cadastra uma vaga. |
 | `GET` | `/jobs/<uuid>` | Consulta uma vaga. |
@@ -78,15 +136,101 @@ Exemplo de corpo para `POST /jobs`:
 
 ```json
 {
-	"title": "Desenvolvedor Python",
-	"description": "Desenvolvimento de serviços web",
-	"company": "Exemplo Tecnologia",
-	"location": "São Paulo, SP",
-	"url": "https://careers.example.com/vagas/desenvolvedor-python",
-	"platform": "Gupy",
-	"salary": 8500
+  "title": "Desenvolvedor Python",
+  "description": "Desenvolvimento de serviços web",
+  "company": "Exemplo Tecnologia",
+  "location": "São Paulo, SP",
+  "url": "https://careers.example.com/vagas/desenvolvedor-python",
+  "platform": "Gupy",
+  "salary": 8500,
+  "modality": "Hybrid",
+  "category": "Engineering",
+  "contract": "CLT",
+  "level": "Mid",
+  "requirements": ["Python", "Flask", "PostgreSQL"],
+  "benefits": "Vale transporte e plano de saúde",
+  "tempo": "published 24h ago"
 }
 ```
+
+#### Endpoints de autenticação
+
+| Método | Caminho | Descrição |
+| --- | --- | --- |
+| `POST` | `/auth/register` | Cadastra um novo usuário (`username` e `password`). |
+| `POST` | `/auth/login` | Autentica o usuário e retorna o perfil. |
+| `GET` | `/auth/favorites?username=<username>` | Lista as vagas favoritadas do usuário. |
+| `POST` | `/auth/favorites` | Adiciona uma vaga aos favoritos do usuário. |
+| `DELETE` | `/auth/favorites` | Remove uma vaga dos favoritos do usuário. |
+
+Exemplo de cadastro:
+
+```http
+POST /auth/register
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "secret123"
+}
+```
+
+Resposta esperada:
+
+```json
+{
+  "user": {
+    "id": "uuid",
+    "username": "alice",
+    "role": "user",
+    "favorite_jobs": [],
+    "created_at": "2026-11-05T00:00:00",
+    "updated_at": "2026-11-05T00:00:00"
+  }
+}
+```
+
+Exemplo de login:
+
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "secret123"
+}
+```
+
+Exemplo de adicionar favorito:
+
+```http
+POST /auth/favorites
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "job_id": "<uuid-da-vaga>"
+}
+```
+
+Exemplo de remoção de favorito:
+
+```http
+DELETE /auth/favorites
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "job_id": "<uuid-da-vaga>"
+}
+```
+
+Observações:
+- `username` deve ter no mínimo 3 caracteres.
+- `password` deve ter no mínimo 3 caracteres.
+- O usuário `admin` já pode existir por padrão com senha `admin`.
+- `favorite_jobs` é armazenado como lista de UUIDs no campo JSON do usuário.
 
 ### Migrações
 

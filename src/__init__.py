@@ -2,6 +2,7 @@ from src.utils import db_postgres
 from src.utils.settings import database, marshmallow_ext
 from flask_migrate import Migrate
 from flask import Flask, jsonify
+from flask_cors import CORS
 from sqlalchemy import text
 import logging
 
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 def create_app(test_config: dict[str, object] | None = None) -> Flask:
     app: Flask = Flask(__name__)
+    CORS(app, resources={r"/jobs*": {"origins": "*"}, r"/auth*": {"origins": "*"}})
     app.config.update(
         SQLALCHEMY_DATABASE_URI=db_postgres.get_uri(),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
@@ -23,10 +25,20 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
     marshmallow_ext.init_app(app)
 
     # Import models before Flask-Migrate inspects SQLAlchemy metadata.
+    from src.controllers.auth_ctr import ensure_default_admin
     from src.models import jobs_mdl  # noqa: F401
+    from src.models import users_mdl  # noqa: F401
+    from src.routes.auth_rts import auth_rts
     from src.routes.jobs_rts import jobs_rts
 
     app.register_blueprint(jobs_rts)
+    app.register_blueprint(auth_rts)
+
+    if app.config.get("TESTING"):
+        with app.app_context():
+            database.create_all()
+            ensure_default_admin()
+
     logger.info(f"Registered blueprints: {app.blueprints.keys()}")
 
     @app.get("/health")
