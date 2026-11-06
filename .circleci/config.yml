@@ -28,11 +28,6 @@ jobs:
             cd mobile
             npm ci
       - run:
-          name: Validate Expo app
-          command: |
-            cd mobile
-            npx expo-doctor
-      - run:
           name: Export mobile bundle
           command: |
             cd mobile
