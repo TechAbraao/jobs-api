@@ -1,0 +1,14 @@
+meta {
+  name: Get Job
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/jobs/{{jobId}}
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}

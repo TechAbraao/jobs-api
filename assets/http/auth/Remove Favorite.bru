@@ -1,0 +1,23 @@
+meta {
+  name: Remove Favorite
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/auth/favorites
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "{{username}}",
+    "job_id": "{{jobId}}"
+  }
+}

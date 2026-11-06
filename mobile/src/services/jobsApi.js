@@ -62,6 +62,50 @@ export async function getJob(jobId) {
   return response?.job ?? null;
 }
 
+export async function loginUser({ username, password }) {
+  const response = await request('/auth/login', {
+    method: 'POST',
+    body: { username, password },
+  });
+
+  return response?.user ? { user: response.user } : response;
+}
+
+export async function registerUser({ username, password, role = 'user' }) {
+  const response = await request('/auth/register', {
+    method: 'POST',
+    body: { username, password, role },
+  });
+
+  return response?.user ? { user: response.user } : response;
+}
+
+export async function listFavoriteJobs(username) {
+  const response = await request('/auth/favorites', {
+    params: { username },
+  });
+
+  return response?.favorite_jobs ?? [];
+}
+
+export async function addFavoriteJob(username, jobId) {
+  const response = await request('/auth/favorites', {
+    method: 'POST',
+    body: { username, job_id: jobId },
+  });
+
+  return response?.user ?? null;
+}
+
+export async function removeFavoriteJob(username, jobId) {
+  const response = await request('/auth/favorites', {
+    method: 'DELETE',
+    body: { username, job_id: jobId },
+  });
+
+  return response?.user ?? null;
+}
+
 export async function createJob(payload) {
   const response = await request('/jobs', {
     method: 'POST',
@@ -87,5 +131,11 @@ export async function replaceJob(jobId, payload) {
 }
 
 export async function deleteJob(jobId) {
-  await request(`/jobs/${jobId}`, { method: 'DELETE' });
+  const id = jobId == null ? '' : String(jobId).trim();
+
+  if (!id) {
+    throw new Error('ID da vaga inválido para exclusão.');
+  }
+
+  await request(`/jobs/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
@@ -16,7 +15,14 @@ import JobDetails from './src/screens/JobDetails';
 import Favorites from './src/screens/Favorites';
 import AdminJobs from './src/screens/AdminJobs';
 
-import { listJobs } from './src/services/jobsApi';
+import {
+  addFavoriteJob,
+  listFavoriteJobs,
+  listJobs,
+  loginUser,
+  registerUser,
+  removeFavoriteJob,
+} from './src/services/jobsApi';
 
 function normalizeJob(job) {
   const title = job?.title || job?.cargo || 'N/A';
@@ -61,9 +67,11 @@ function normalizeJobs(jobs) {
 
 export default function App() {
   const { width } = useWindowDimensions();
-
   const isTablet = width >= 768;
 
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
   const [tela, setTela] = useState('Welcome');
   const [vagas, setVagas] = useState([]);
   const [favoritos, setFavoritos] = useState([]);
@@ -80,10 +88,64 @@ export default function App() {
   });
 
   useEffect(() => {
-    pesquisarNaGupy();
-  }, []);
+    if (session) {
+      pesquisarNaGupy();
+    }
+  }, [session]);
+
+  async function carregarFavoritos(username) {
+    if (!username) {
+      setFavoritos([]);
+      return;
+    }
+
+    try {
+      const favoriteJobs = await listFavoriteJobs(username);
+      setFavoritos(normalizeJobs(favoriteJobs));
+    } catch (error) {
+      console.warn('Não foi possível carregar favoritos:', error.message);
+      setFavoritos([]);
+    }
+  }
+
+  async function handleAuth({ username, password, mode = 'login' }) {
+    const trimmedUsername = (username || '').trim();
+
+    if (!trimmedUsername || !(password || '').trim()) {
+      setAuthError('Informe usuário e senha para continuar.');
+      return;
+    }
+
+    try {
+      setAuthLoading(true);
+      setAuthError('');
+
+      const response = mode === 'register'
+        ? await registerUser({ username: trimmedUsername, password, role: 'user' })
+        : await loginUser({ username: trimmedUsername, password });
+
+      const user = response?.user ?? response;
+      const nextSession = {
+        username: user.username,
+        role: user.role || 'user',
+        user,
+      };
+
+      setSession(nextSession);
+      await carregarFavoritos(user.username);
+      setTela('Home');
+    } catch (error) {
+      setAuthError(error.message || 'Não foi possível autenticar o usuário.');
+    } finally {
+      setAuthLoading(false);
+    }
+  }
 
   async function pesquisarNaGupy(termo = busca) {
+    if (!session) {
+      return;
+    }
+
     try {
       const params = { q: termo || undefined };
 
@@ -92,7 +154,6 @@ export default function App() {
       }
 
       const response = await listJobs(params);
-
       setVagas(normalizeJobs(response.jobs || []));
     } catch (error) {
       console.log('Erro na busca:', error.message);
@@ -100,12 +161,30 @@ export default function App() {
     }
   }
 
-  function alternarFavorito(vaga) {
-    setFavoritos(atual =>
-      atual.some(item => item.id === vaga.id)
-        ? atual.filter(item => item.id !== vaga.id)
-        : [...atual, vaga]
-    );
+  async function alternarFavorito(vaga) {
+    if (!session?.username || !vaga?.id) {
+      return;
+    }
+
+    const jaFavorita = favoritos.some(item => item.id === vaga.id);
+
+    try {
+      if (jaFavorita) {
+        await removeFavoriteJob(session.username, vaga.id);
+        setFavoritos(atual => atual.filter(item => item.id !== vaga.id));
+        return;
+      }
+
+      await addFavoriteJob(session.username, vaga.id);
+      setFavoritos(atual => {
+        if (atual.some(item => item.id === vaga.id)) {
+          return atual;
+        }
+        return [...atual, normalizeJob(vaga)];
+      });
+    } catch (error) {
+      console.warn('Não foi possível atualizar favorito:', error.message);
+    }
   }
 
   function ehFavorita(vaga) {
@@ -125,11 +204,28 @@ export default function App() {
     setTela('AdminJobs');
   }
 
-  function renderizarTela() {
-    switch (tela) {
-      case 'Welcome':
-        return <Welcome onEnter={() => setTela('Home')} onOpenAdmin={abrirAdmin} />;
+  function handleLogout() {
+    setSession(null);
+    setAuthError('');
+    setTela('Welcome');
+    setVagas([]);
+    setFavoritos([]);
+    setVagaSelecionada(null);
+  }
 
+  function renderizarTela() {
+    if (!session) {
+      return (
+        <Welcome
+          onLogin={handleAuth}
+          onRegister={handleAuth}
+          loading={authLoading}
+          error={authError}
+        />
+      );
+    }
+
+    switch (tela) {
       case 'Home':
         return (
           <Home
@@ -144,9 +240,11 @@ export default function App() {
             abrirDetalhes={abrirDetalhes}
             abrirFiltros={() => setTela('Filters')}
             abrirFavoritos={() => setTela('Favorites')}
-            onOpenAdmin={abrirAdmin}
+            onOpenAdmin={session.role === 'admin' ? abrirAdmin : null}
             pesquisarNaGupy={pesquisarNaGupy}
             filtros={filtros}
+            session={session}
+            onLogout={handleLogout}
           />
         );
 
@@ -184,10 +282,38 @@ export default function App() {
         );
 
       case 'AdminJobs':
-        return <AdminJobs onBack={voltarParaHome} />;
+        return session.role === 'admin' ? (
+          <AdminJobs onBack={voltarParaHome} />
+        ) : (
+          <Home
+            vagas={vagas}
+            busca={busca}
+            setBusca={setBusca}
+            categoria={categoria}
+            setCategoria={setCategoria}
+            favoritos={favoritos}
+            ehFavorita={ehFavorita}
+            alternarFavorito={alternarFavorito}
+            abrirDetalhes={abrirDetalhes}
+            abrirFiltros={() => setTela('Filters')}
+            abrirFavoritos={() => setTela('Favorites')}
+            onOpenAdmin={null}
+            pesquisarNaGupy={pesquisarNaGupy}
+            filtros={filtros}
+            session={session}
+            onLogout={handleLogout}
+          />
+        );
 
       default:
-        return <Welcome onEnter={() => setTela('Home')} onOpenAdmin={abrirAdmin} />;
+        return (
+          <Welcome
+            onLogin={handleAuth}
+            onRegister={handleAuth}
+            loading={authLoading}
+            error={authError}
+          />
+        );
     }
   }
 
@@ -224,4 +350,3 @@ const styles = StyleSheet.create({
     maxWidth: 900,
   },
 });
-

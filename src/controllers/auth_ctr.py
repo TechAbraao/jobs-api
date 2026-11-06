@@ -59,6 +59,7 @@ def create_user(username: str, password: str, *, role: str = "user") -> UsersMdl
     if not normalized:
         raise ValueError("username is required")
 
+    normalized = normalized.strip()
     if get_user_by_username(normalized) is not None:
         raise DuplicateUserError
 

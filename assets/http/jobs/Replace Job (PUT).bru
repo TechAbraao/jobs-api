@@ -1,0 +1,35 @@
+meta {
+  name: Replace Job (PUT)
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/jobs/{{jobId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Desenvolvedor Python Senior",
+    "description": "Desenvolvimento de serviços web e APIs",
+    "company": "Exemplo Tecnologia",
+    "location": "São Paulo, SP",
+    "url": "https://careers.example.com/vagas/desenvolvedor-python-senior",
+    "platform": "Gupy",
+    "salary": 12000,
+    "modality": "Hybrid",
+    "category": "Engineering",
+    "contract": "CLT",
+    "level": "Senior",
+    "requirements": ["Python", "Flask", "SQLAlchemy", "PostgreSQL"],
+    "benefits": "Vale transporte, plano de saúde e home office",
+    "tempo": "published 2 days ago"
+  }
+}

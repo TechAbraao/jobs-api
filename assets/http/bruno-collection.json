@@ -1,0 +1,18 @@
+{
+  "name": "jobs-api",
+  "version": "1.0.0",
+  "items": [
+    { "name": "Health Check", "method": "GET", "url": "{{baseUrl}}/health" },
+    { "name": "List Jobs", "method": "GET", "url": "{{baseUrl}}/jobs?page=1&per_page=20" },
+    { "name": "Create Job", "method": "POST", "url": "{{baseUrl}}/jobs" },
+    { "name": "Get Job", "method": "GET", "url": "{{baseUrl}}/jobs/{{jobId}}" },
+    { "name": "Update Job (PATCH)", "method": "PATCH", "url": "{{baseUrl}}/jobs/{{jobId}}" },
+    { "name": "Replace Job (PUT)", "method": "PUT", "url": "{{baseUrl}}/jobs/{{jobId}}" },
+    { "name": "Delete Job", "method": "DELETE", "url": "{{baseUrl}}/jobs/{{jobId}}" },
+    { "name": "Register User", "method": "POST", "url": "{{baseUrl}}/auth/register" },
+    { "name": "Login User", "method": "POST", "url": "{{baseUrl}}/auth/login" },
+    { "name": "List Favorites", "method": "GET", "url": "{{baseUrl}}/auth/favorites?username={{username}}" },
+    { "name": "Add Favorite", "method": "POST", "url": "{{baseUrl}}/auth/favorites" },
+    { "name": "Remove Favorite", "method": "DELETE", "url": "{{baseUrl}}/auth/favorites" }
+  ]
+}

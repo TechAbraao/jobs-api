@@ -1,0 +1,20 @@
+meta {
+  name: List Favorites
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/auth/favorites?username={{username}}
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+vars:pre-request {
+  username: techabraao
+  baseUrl: http://127.0.0.1:5000
+}

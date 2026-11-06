@@ -1,0 +1,10 @@
+{
+  "version": "1",
+  "name": "jobs-api",
+  "type": "collection",
+  "ignore": [
+    ".git",
+    "node_modules",
+    "dist"
+  ]
+}

@@ -326,6 +326,9 @@ def test_user_registration_login_and_favorites(client):
     duplicate = client.post("/auth/register", json={"username": "alice", "password": "another"})
     assert duplicate.status_code == 409
 
+    duplicate_case_insensitive = client.post("/auth/register", json={"username": " Alice ", "password": "another"})
+    assert duplicate_case_insensitive.status_code == 409
+
     created_job = client.post("/jobs", json=job_payload(title="Favorite Role", company="Favorite Co.")).get_json()["job"]
     add_favorite = client.post("/auth/favorites", json={"username": "alice", "job_id": created_job["id"]})
     assert add_favorite.status_code == 200

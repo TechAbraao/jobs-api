@@ -1,16 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  SafeAreaView,
-  View,
-  Text,
+  ActivityIndicator,
   Image,
+  SafeAreaView,
   StatusBar,
   StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
-import Button from '../components/Button';
+export default function Welcome({ onLogin, onRegister, loading, error }) {
+  const [mode, setMode] = useState('login');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
-export default function Welcome({ onEnter, onOpenAdmin }) {
+  function handleSubmit() {
+    const action = mode === 'login' ? onLogin : onRegister;
+    if (action) {
+      action({ username, password, mode });
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#082347" />
@@ -29,33 +41,62 @@ export default function Welcome({ onEnter, onOpenAdmin }) {
           style={styles.image}
         />
 
-        <Text style={styles.title}>
-          Encontre seu{'\n'}próximo trabalho
-        </Text>
+        <Text style={styles.title}>Bem-vindo</Text>
+        <Text style={styles.subtitle}>Entre para acessar as vagas e recursos do app.</Text>
 
-        <Text style={styles.subtitle}>
-          Oportunidades que combinam com você
-        </Text>
-      </View>
+        <View style={styles.tabRow}>
+          <TouchableOpacity
+            onPress={() => setMode('login')}
+            style={[styles.tab, mode === 'login' && styles.tabActive]}
+          >
+            <Text style={[styles.tabText, mode === 'login' && styles.tabTextActive]}>Login</Text>
+          </TouchableOpacity>
 
-      <View style={styles.footer}>
-        <Button
-          title="Entrar"
-          onPress={onEnter}
-          style={styles.button}
-        />
+          <TouchableOpacity
+            onPress={() => setMode('register')}
+            style={[styles.tab, mode === 'register' && styles.tabActive]}
+          >
+            <Text style={[styles.tabText, mode === 'register' && styles.tabTextActive]}>Cadastrar</Text>
+          </TouchableOpacity>
+        </View>
 
-        {onOpenAdmin ? (
-          <Button
-            title="Painel administrativo"
-            onPress={onOpenAdmin}
-            style={[styles.button, styles.adminButton]}
+        <View style={styles.form}>
+          <TextInput
+            value={username}
+            onChangeText={setUsername}
+            placeholder="Usuário"
+            autoCapitalize="none"
+            style={styles.input}
           />
-        ) : null}
 
-        <Text style={styles.footerText}>
-          Acesso direto, simples e seguro.
-        </Text>
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Senha"
+            secureTextEntry
+            style={styles.input}
+          />
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={loading}
+            style={styles.primaryButton}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.primaryButtonText}>
+                {mode === 'login' ? 'Entrar' : 'Criar conta'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <Text style={styles.footerText}>
+            Acesso para usuários e administradores da plataforma.
+          </Text>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -93,12 +134,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 28,
+    paddingVertical: 20,
   },
 
   image: {
     width: '100%',
-    height: 220,
-    marginBottom: 20,
+    height: 180,
+    marginBottom: 18,
   },
 
   title: {
@@ -106,7 +148,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     textAlign: 'center',
-    lineHeight: 30,
   },
 
   subtitle: {
@@ -114,29 +155,81 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     marginTop: 10,
+    marginBottom: 18,
   },
 
-
-  footer: {
-    backgroundColor: '#F2F5F9',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 28,
+  tabRow: {
+    flexDirection: 'row',
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#EEF2F9',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
   },
 
-  button: {
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+
+  tabActive: {
+    backgroundColor: '#FFFFFF',
+  },
+
+  tabText: {
+    color: '#60708A',
+    fontWeight: '600',
+  },
+
+  tabTextActive: {
+    color: '#082347',
+  },
+
+  form: {
+    width: '100%',
+    maxWidth: 360,
+  },
+
+  input: {
+    backgroundColor: '#F7F9FC',
+    borderColor: '#D9E1EE',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+    color: '#1D3C75',
+  },
+
+  primaryButton: {
     backgroundColor: '#082347',
-    marginBottom: 10,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
   },
 
-  adminButton: {
-    backgroundColor: '#1647C5',
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+
+  errorText: {
+    color: '#C23616',
+    fontSize: 12,
+    marginBottom: 8,
+    textAlign: 'center',
   },
 
   footerText: {
     color: '#828C9E',
     fontSize: 10,
     textAlign: 'center',
-    marginTop: 14,
+    marginTop: 16,
   },
 });

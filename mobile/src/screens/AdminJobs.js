@@ -101,9 +101,17 @@ export default function AdminJobs({ onBack }) {
   }
 
   async function handleDelete(job) {
+    const id = String(job?.id ?? '').trim();
+
+    if (!id) {
+      setError('Não foi possível identificar a vaga para exclusão.');
+      console.warn('Delete cancelado: job.id vazio', job);
+      return;
+    }
+
     Alert.alert(
       'Remover vaga',
-      `Deseja excluir a vaga "${job.title}"?`,
+      `Deseja excluir a vaga "${job.title || 'esta vaga'}"?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -111,9 +119,11 @@ export default function AdminJobs({ onBack }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteJob(job.id);
+              setError('');
+              setSuccess('');
+              await deleteJob(id);
+              setJobs(current => current.filter(item => String(item.id) !== id));
               setSuccess('Vaga removida com sucesso.');
-              await loadJobs(search);
             } catch (err) {
               setError(err.message || 'Não foi possível excluir a vaga.');
             }

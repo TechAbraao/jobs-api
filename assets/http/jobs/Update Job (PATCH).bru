@@ -1,0 +1,24 @@
+meta {
+  name: Update Job (PATCH)
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/jobs/{{jobId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "salary": 9500,
+    "modality": "Remote",
+    "description": "Atualização da descrição da vaga"
+  }
+}

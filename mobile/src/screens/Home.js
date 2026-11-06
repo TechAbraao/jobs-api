@@ -30,6 +30,8 @@ export default function Home({
   onOpenAdmin,
   pesquisarNaGupy,
   filtros,
+  session,
+  onLogout,
 }) {
   const filtradas = vagas.filter(vaga => {
     const termo = busca.toLowerCase();
@@ -71,11 +73,31 @@ export default function Home({
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: 14, paddingBottom: 20 }}
       >
-        <Text style={{ color: '#8792A6', fontSize: 14, marginTop: 12 }}>
-          Boa tarde
-        </Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: 12,
+          }}
+        >
+          <View>
+            <Text style={{ color: '#8792A6', fontSize: 14 }}>
+              {session?.role === 'admin' ? 'Administrador' : 'Usuário'}
+            </Text>
+            <Text style={{ color: '#1D3C75', fontSize: 18 }}>
+              Olá, {session?.username || 'Usuário'}
+            </Text>
+          </View>
 
-        <Text style={{ color: '#1D3C75', fontSize: 18 }}>
+          {onLogout ? (
+            <TouchableOpacity onPress={onLogout} style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#E8ECF5' }}>
+              <Text style={{ color: '#082347', fontSize: 11, fontWeight: '700' }}>Sair</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        <Text style={{ color: '#1D3C75', fontSize: 18, marginTop: 6 }}>
           Encontre sua vaga
         </Text>
 

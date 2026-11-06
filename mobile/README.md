@@ -31,6 +31,17 @@ npm start
 
 Em seguida, escolha o simulador ou dispositivo para abrir o app.
 
+## Login e roles
+
+O app inicia com uma tela de autenticação. Usuários comuns acessam a listagem de vagas e favoritos, enquanto o perfil `admin` também recebe acesso ao painel administrativo para criar, editar e remover vagas.
+
+Credenciais padrão para teste:
+
+```bash
+usuário: admin
+senha: admin
+```
+
 ## Painel administrativo
 
 No início do app, há o botão `Painel administrativo` que permite:

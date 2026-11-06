@@ -1,0 +1,10 @@
+{
+  "name": "Local",
+  "default": true,
+  "variables": [
+    { "name": "baseUrl", "value": "http://localhost:5000", "enabled": true },
+    { "name": "jobId", "value": "00000000-0000-0000-0000-000000000000", "enabled": true },
+    { "name": "username", "value": "admin", "enabled": true },
+    { "name": "password", "value": "admin", "enabled": true }
+  ]
+}

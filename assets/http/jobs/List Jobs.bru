@@ -1,0 +1,19 @@
+meta {
+  name: List Jobs
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/jobs?page=1&per_page=20
+  auth: none
+}
+
+query {
+  page: 1
+  per_page: 20
+}
+
+headers {
+  Accept: application/json
+}

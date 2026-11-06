@@ -34,10 +34,10 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
     app.register_blueprint(jobs_rts)
     app.register_blueprint(auth_rts)
 
-    if app.config.get("TESTING"):
-        with app.app_context():
+    with app.app_context():
+        if not database.inspect(database.engine).has_table("users"):
             database.create_all()
-            ensure_default_admin()
+        ensure_default_admin()
 
     logger.info(f"Registered blueprints: {app.blueprints.keys()}")
 

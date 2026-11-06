@@ -1,0 +1,23 @@
+meta {
+  name: Add Favorite
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/auth/favorites
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "{{username}}",
+    "job_id": "{{jobId}}"
+  }
+}

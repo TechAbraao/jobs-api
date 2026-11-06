@@ -1,22 +1,45 @@
 version: 2.1
 
 jobs:
-  test:
+  backend-test:
     docker:
       - image: cimg/python:3.12
     working_directory: ~/jobs-api
     steps:
       - checkout
       - run:
-          name: Install dependencies
+          name: Install backend dependencies
           command: |
             python -m pip install --upgrade pip
             python -m pip install -r requirements.txt
       - run:
-          name: Run tests
+          name: Run backend tests
           command: python -m pytest -q
 
+  mobile-test:
+    docker:
+      - image: cimg/node:20.17
+    working_directory: ~/jobs-api
+    steps:
+      - checkout
+      - run:
+          name: Install mobile dependencies
+          command: |
+            cd mobile
+            npm ci
+      - run:
+          name: Validate Expo app
+          command: |
+            cd mobile
+            npx expo-doctor
+      - run:
+          name: Export mobile bundle
+          command: |
+            cd mobile
+            npx expo export --platform web --clear --output-dir /tmp/expo-web
+
 workflows:
-  test_workflow:
+  validate_workflow:
     jobs:
-      - test
+      - backend-test
+      - mobile-test
