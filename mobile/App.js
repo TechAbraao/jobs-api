@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
+  Alert,
   SafeAreaView,
   StyleSheet,
   useWindowDimensions,

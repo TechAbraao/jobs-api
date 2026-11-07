@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
+import { Platform } from 'react-native';
 import { createJob, deleteJob, listJobs, updateJob } from '../services/jobsApi';
 
 const EMPTY_FORM = {
@@ -32,6 +32,7 @@ export default function AdminJobs({ onBack }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
+  const [activeScreen, setActiveScreen] = useState('form');
 
   async function loadJobs(term = '') {
     try {
@@ -57,6 +58,18 @@ export default function AdminJobs({ onBack }) {
   function resetForm() {
     setForm(EMPTY_FORM);
     setEditingId(null);
+  }
+
+  function openCreateScreen() {
+    setActiveScreen('form');
+    setError('');
+    setSuccess('');
+  }
+
+  function openListScreen() {
+    setActiveScreen('list');
+    setError('');
+    setSuccess('');
   }
 
   async function handleSubmit() {
@@ -93,6 +106,7 @@ export default function AdminJobs({ onBack }) {
       }
       await loadJobs(search);
       resetForm();
+      setActiveScreen('list');
     } catch (err) {
       setError(err.message || 'Não foi possível salvar essa vaga.');
     } finally {
@@ -100,37 +114,48 @@ export default function AdminJobs({ onBack }) {
     }
   }
 
-  async function handleDelete(job) {
-    const id = String(job?.id ?? '').trim();
+  function confirmDialog(title, message) {
+    if (Platform.OS === 'web') {
+      return Promise.resolve(window.confirm(`${title}\n\n${message}`));
+    }
+    return new Promise(resolve => {
+      Alert.alert(
+        title,
+        message,
+        [
+          { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
+          { text: 'Excluir', style: 'destructive', onPress: () => resolve(true) },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) },
+      );
+    });
+  }
 
-    if (!id) {
+  async function handleDelete(job) {
+    const id = job?.id;
+
+    if (id === undefined || id === null || id === '') {
       setError('Não foi possível identificar a vaga para exclusão.');
-      console.warn('Delete cancelado: job.id vazio', job);
       return;
     }
 
-    Alert.alert(
+    const confirmed = await confirmDialog(
       'Remover vaga',
       `Deseja excluir a vaga "${job.title || 'esta vaga'}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setError('');
-              setSuccess('');
-              await deleteJob(id);
-              setJobs(current => current.filter(item => String(item.id) !== id));
-              setSuccess('Vaga removida com sucesso.');
-            } catch (err) {
-              setError(err.message || 'Não foi possível excluir a vaga.');
-            }
-          },
-        },
-      ],
     );
+    if (!confirmed) return;
+
+    try {
+      setError('');
+      setSuccess('');
+      await deleteJob(id);
+      setJobs(current => current.filter(item => String(item.id) !== String(id)));
+      await loadJobs(search);
+      setSuccess('Vaga removida com sucesso.');
+    } catch (err) {
+      console.warn('Erro ao excluir:', err);
+      setError(err.message || 'Não foi possível excluir a vaga.');
+    }
   }
 
   function handleEdit(job) {
@@ -144,9 +169,141 @@ export default function AdminJobs({ onBack }) {
       platform: job.platform || '',
       salary: job.salary == null ? '' : String(job.salary),
     });
+    setActiveScreen('form');
     setError('');
     setSuccess('');
   }
+
+  const renderFormScreen = () => (
+    <View style={styles.sectionBox}>
+      <Text style={styles.sectionTitle}>{editingId ? 'Editar vaga' : 'Adicionar vaga'}</Text>
+
+      <TextInput
+        value={form.title}
+        onChangeText={value => updateField('title', value)}
+        placeholder="Título da vaga"
+        style={styles.input}
+      />
+      <TextInput
+        value={form.company}
+        onChangeText={value => updateField('company', value)}
+        placeholder="Empresa"
+        style={styles.input}
+      />
+      <TextInput
+        value={form.location}
+        onChangeText={value => updateField('location', value)}
+        placeholder="Localização"
+        style={styles.input}
+      />
+      <TextInput
+        value={form.platform}
+        onChangeText={value => updateField('platform', value)}
+        placeholder="Plataforma (LinkedIn, Indeed, etc.)"
+        style={styles.input}
+      />
+      <TextInput
+        value={form.url}
+        onChangeText={value => updateField('url', value)}
+        placeholder="URL da vaga"
+        keyboardType="url"
+        autoCapitalize="none"
+        style={styles.input}
+      />
+      <TextInput
+        value={form.salary}
+        onChangeText={value => updateField('salary', value)}
+        placeholder="Salário (opcional)"
+        keyboardType="numeric"
+        style={styles.input}
+      />
+      <TextInput
+        value={form.description}
+        onChangeText={value => updateField('description', value)}
+        placeholder="Descrição"
+        multiline
+        numberOfLines={6}
+        textAlignVertical="top"
+        style={[styles.input, styles.textArea]}
+      />
+
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {success ? <Text style={styles.successText}>{success}</Text> : null}
+
+      <View style={styles.buttonRow}>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleSubmit} disabled={saving}>
+          <Text style={styles.primaryButtonText}>{saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Adicionar vaga'}</Text>
+        </TouchableOpacity>
+
+        {editingId ? (
+          <TouchableOpacity style={styles.secondaryButton} onPress={resetForm}>
+            <Text style={styles.secondaryButtonText}>Cancelar</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.secondaryButton} onPress={openListScreen}>
+            <Text style={styles.secondaryButtonText}>Ver vagas</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
+  const renderListScreen = () => (
+    <>
+      <View style={styles.listHeader}>
+        <View style={styles.listHeaderRow}>
+          <Text style={styles.sectionTitle}>Vagas cadastradas</Text>
+          <TouchableOpacity style={styles.newJobButton} onPress={openCreateScreen}>
+            <Text style={styles.newJobButtonText}>+ Nova vaga</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TextInput
+          value={search}
+          onChangeText={async value => {
+            setSearch(value);
+            await loadJobs(value);
+          }}
+          placeholder="Buscar por título ou empresa"
+          style={styles.searchInput}
+        />
+      </View>
+
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {success ? <Text style={styles.successText}>{success}</Text> : null}
+
+      {loading ? (
+        <Text style={styles.emptyState}>Carregando vagas...</Text>
+      ) : jobs.length === 0 ? (
+        <Text style={styles.emptyState}>Nenhuma vaga cadastrada ainda.</Text>
+      ) : (
+        jobs.map(job => (
+          <View key={job.id} style={styles.jobCard}>
+            <View style={styles.jobHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.jobTitle}>{job.title}</Text>
+                <Text style={styles.jobMeta}>{job.company}</Text>
+              </View>
+
+              <View style={styles.actions}>
+                <TouchableOpacity onPress={() => handleEdit(job)} style={styles.iconButton}>
+                  <Ionicons name="create-outline" size={18} color="#0D2347" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDelete(job)} style={styles.iconButton}>
+                  <Ionicons name="trash-outline" size={18} color="#C23616" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <Text style={styles.jobText}>{job.location}</Text>
+            <Text style={styles.jobText}>{job.platform}</Text>
+            {job.salary != null ? <Text style={styles.jobSalary}>R$ {Number(job.salary).toLocaleString('pt-BR')}</Text> : null}
+            <Text numberOfLines={3} style={styles.jobDescription}>{job.description}</Text>
+          </View>
+        ))
+      )}
+    </>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -162,117 +319,27 @@ export default function AdminJobs({ onBack }) {
         contentContainerStyle={{ paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.sectionBox}>
-          <Text style={styles.sectionTitle}>{editingId ? 'Editar vaga' : 'Adicionar vaga'}</Text>
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            style={[styles.tabButton, activeScreen === 'form' && styles.activeTabButton]}
+            onPress={openCreateScreen}
+          >
+            <Text style={[styles.tabButtonText, activeScreen === 'form' && styles.activeTabButtonText]}>
+              Adicionar Vaga
+            </Text>
+          </TouchableOpacity>
 
-          <TextInput
-            value={form.title}
-            onChangeText={value => updateField('title', value)}
-            placeholder="Título da vaga"
-            style={styles.input}
-          />
-          <TextInput
-            value={form.company}
-            onChangeText={value => updateField('company', value)}
-            placeholder="Empresa"
-            style={styles.input}
-          />
-          <TextInput
-            value={form.location}
-            onChangeText={value => updateField('location', value)}
-            placeholder="Localização"
-            style={styles.input}
-          />
-          <TextInput
-            value={form.platform}
-            onChangeText={value => updateField('platform', value)}
-            placeholder="Plataforma (LinkedIn, Indeed, etc.)"
-            style={styles.input}
-          />
-          <TextInput
-            value={form.url}
-            onChangeText={value => updateField('url', value)}
-            placeholder="URL da vaga"
-            keyboardType="url"
-            autoCapitalize="none"
-            style={styles.input}
-          />
-          <TextInput
-            value={form.salary}
-            onChangeText={value => updateField('salary', value)}
-            placeholder="Salário (opcional)"
-            keyboardType="numeric"
-            style={styles.input}
-          />
-          <TextInput
-            value={form.description}
-            onChangeText={value => updateField('description', value)}
-            placeholder="Descrição"
-            multiline
-            numberOfLines={6}
-            textAlignVertical="top"
-            style={[styles.input, styles.textArea]}
-          />
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          {success ? <Text style={styles.successText}>{success}</Text> : null}
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.primaryButton} onPress={handleSubmit} disabled={saving}>
-              <Text style={styles.primaryButtonText}>{saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Adicionar vaga'}</Text>
-            </TouchableOpacity>
-
-            {editingId ? (
-              <TouchableOpacity style={styles.secondaryButton} onPress={resetForm}>
-                <Text style={styles.secondaryButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-            ) : null}
-          </View>
+          <TouchableOpacity
+            style={[styles.tabButton, activeScreen === 'list' && styles.activeTabButton]}
+            onPress={openListScreen}
+          >
+            <Text style={[styles.tabButtonText, activeScreen === 'list' && styles.activeTabButtonText]}>
+              Vagas Cadastradas
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.listHeader}>
-          <Text style={styles.sectionTitle}>Vagas cadastradas</Text>
-          <TextInput
-            value={search}
-            onChangeText={async value => {
-              setSearch(value);
-              await loadJobs(value);
-            }}
-            placeholder="Buscar por título ou empresa"
-            style={styles.searchInput}
-          />
-        </View>
-
-        {loading ? (
-          <Text style={styles.emptyState}>Carregando vagas...</Text>
-        ) : jobs.length === 0 ? (
-          <Text style={styles.emptyState}>Nenhuma vaga cadastrada ainda.</Text>
-        ) : (
-          jobs.map(job => (
-            <View key={job.id} style={styles.jobCard}>
-              <View style={styles.jobHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.jobTitle}>{job.title}</Text>
-                  <Text style={styles.jobMeta}>{job.company}</Text>
-                </View>
-
-                <View style={styles.actions}>
-                  <TouchableOpacity onPress={() => handleEdit(job)} style={styles.iconButton}>
-                    <Ionicons name="create-outline" size={18} color="#0D2347" />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDelete(job)} style={styles.iconButton}>
-                    <Ionicons name="trash-outline" size={18} color="#C23616" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <Text style={styles.jobText}>{job.location}</Text>
-              <Text style={styles.jobText}>{job.platform}</Text>
-              {job.salary != null ? <Text style={styles.jobSalary}>R$ {Number(job.salary).toLocaleString('pt-BR')}</Text> : null}
-              <Text numberOfLines={3} style={styles.jobDescription}>{job.description}</Text>
-            </View>
-          ))
-        )}
+        {activeScreen === 'form' ? renderFormScreen() : renderListScreen()}
       </ScrollView>
     </SafeAreaView>
   );
@@ -383,9 +450,53 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
   },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 4,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+  activeTabButton: {
+    backgroundColor: '#1647C5',
+  },
+  tabButtonText: {
+    color: '#0D2347',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  activeTabButtonText: {
+    color: '#FFFFFF',
+  },
   listHeader: {
     marginTop: 22,
     marginBottom: 8,
+  },
+  listHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  newJobButton: {
+    backgroundColor: '#EAF0FD',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  newJobButtonText: {
+    color: '#1647C5',
+    fontWeight: '700',
+    fontSize: 12,
   },
   searchInput: {
     backgroundColor: '#FFFFFF',

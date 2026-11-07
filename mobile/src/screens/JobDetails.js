@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -29,6 +29,11 @@ export default function JobDetails({
   const modalidade = vaga?.modalidade || 'N/A';
   const categoria = vaga?.categoria || 'N/A';
   const contrato = vaga?.contrato || 'N/A';
+
+   useEffect(() => {
+    document.title = "HubJobs | Detalhes da Vaga";
+  }, []);
+
 
   async function abrirVaga() {
     if (!vaga.link) {

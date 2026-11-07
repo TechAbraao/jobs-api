@@ -131,11 +131,13 @@ export async function replaceJob(jobId, payload) {
 }
 
 export async function deleteJob(jobId) {
-  const id = jobId == null ? '' : String(jobId).trim();
+  const id = jobId
 
-  if (!id) {
+  /*
+  if (!id || !/^[0-9a-fA-F-]{36}$/.test(id)) {
     throw new Error('ID da vaga inválido para exclusão.');
   }
-
-  await request(`/jobs/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  */
+ 
+  await request(`/jobs/${id}`, { method: 'DELETE' });
 }

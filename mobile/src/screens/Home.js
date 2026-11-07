@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
 import JobCard from '../components/JobCard';
 import BottomTabs from '../components/BottomTabs';
 import Chip from '../components/Chip';
@@ -33,8 +32,13 @@ export default function Home({
   session,
   onLogout,
 }) {
+  const canManageFavorites = session?.role !== 'admin';
   const filtradas = vagas.filter(vaga => {
     const termo = busca.toLowerCase();
+
+    useEffect(() => {
+      document.title = "HubJobs | Vagas";
+    }, []);
 
     const correspondeBusca =
       vaga.cargo.toLowerCase().includes(termo) ||
@@ -132,6 +136,32 @@ export default function Home({
           </TouchableOpacity>
         </View>
 
+        {session?.role === 'admin' && onOpenAdmin ? (
+          <TouchableOpacity
+            onPress={onOpenAdmin}
+            style={{
+              backgroundColor: '#EAF1FF',
+              borderRadius: 12,
+              paddingVertical: 12,
+              paddingHorizontal: 14,
+              marginTop: 12,
+              borderWidth: 1,
+              borderColor: '#CFE0FF',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="briefcase-outline" size={18} color={BLUE} />
+              <Text style={{ color: '#0D2347', fontWeight: '700', marginLeft: 8 }}>
+                Cadastrar vagas
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={BLUE} />
+          </TouchableOpacity>
+        ) : null}
+
         <View style={{ flexDirection: 'row', marginTop: 12, flexWrap: 'wrap' }}>
           {['Todas', 'Produto', 'Engenharia', 'Dados'].map(item => (
             <Chip
@@ -163,9 +193,9 @@ export default function Home({
           <JobCard
             key={vaga.id}
             vaga={vaga}
-            favorita={ehFavorita(vaga)}
+            favorita={canManageFavorites ? ehFavorita(vaga) : false}
             onPress={() => abrirDetalhes(vaga)}
-            onFavorite={() => alternarFavorito(vaga)}
+            onFavorite={canManageFavorites ? () => alternarFavorito(vaga) : undefined}
           />
         ))}
 
@@ -178,7 +208,7 @@ export default function Home({
 
       <BottomTabs
         active="Home"
-        onSearch={() => {}}
+        onSearch={() => { }}
         onFavorites={abrirFavoritos}
         onAdmin={onOpenAdmin}
       />

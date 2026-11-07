@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -16,6 +16,10 @@ export default function Welcome({ onLogin, onRegister, loading, error }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
+  useEffect(() => {
+    document.title = "HubJobs | Entrar e Registrar";
+  }, []);
+
   function handleSubmit() {
     const action = mode === 'login' ? onLogin : onRegister;
     if (action) {
@@ -29,8 +33,8 @@ export default function Welcome({ onLogin, onRegister, loading, error }) {
 
       <View style={styles.header}>
         <Text style={styles.logo}>
-          <Text style={styles.logoBold}>Jobs</Text>
-          <Text style={styles.logoLight}>Mobile</Text>
+          <Text style={styles.logoBold}>Hub</Text>
+          <Text style={styles.logoLight}>Jobs</Text>
         </Text>
       </View>
 
