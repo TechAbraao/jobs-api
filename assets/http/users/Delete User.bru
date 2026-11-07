@@ -1,0 +1,27 @@
+meta {
+  name: Delete User
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/auth/users
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "{{username}}"
+  }
+}
+
+vars:pre-request {
+  username: alice
+  baseUrl: http://127.0.0.1:5000
+}

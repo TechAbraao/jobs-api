@@ -93,8 +93,8 @@ export default function App() {
     }
   }, [session]);
 
-  async function carregarFavoritos(username) {
-    if (!username) {
+  async function carregarFavoritos(username, role = session?.role) {
+    if (!username || role === 'admin') {
       setFavoritos([]);
       return;
     }
@@ -132,7 +132,7 @@ export default function App() {
       };
 
       setSession(nextSession);
-      await carregarFavoritos(user.username);
+      await carregarFavoritos(user.username, nextSession.role);
       setTela('Home');
     } catch (error) {
       setAuthError(error.message || 'Não foi possível autenticar o usuário.');
@@ -162,7 +162,7 @@ export default function App() {
   }
 
   async function alternarFavorito(vaga) {
-    if (!session?.username || !vaga?.id) {
+    if (session?.role === 'admin' || !session?.username || !vaga?.id) {
       return;
     }
 
@@ -225,6 +225,8 @@ export default function App() {
       );
     }
 
+    const canManageFavorites = session.role !== 'admin';
+
     switch (tela) {
       case 'Home':
         return (
@@ -236,10 +238,10 @@ export default function App() {
             setCategoria={setCategoria}
             favoritos={favoritos}
             ehFavorita={ehFavorita}
-            alternarFavorito={alternarFavorito}
+            alternarFavorito={canManageFavorites ? alternarFavorito : () => {}}
             abrirDetalhes={abrirDetalhes}
             abrirFiltros={() => setTela('Filters')}
-            abrirFavoritos={() => setTela('Favorites')}
+            abrirFavoritos={canManageFavorites ? () => setTela('Favorites') : undefined}
             onOpenAdmin={session.role === 'admin' ? abrirAdmin : null}
             pesquisarNaGupy={pesquisarNaGupy}
             filtros={filtros}
@@ -264,13 +266,36 @@ export default function App() {
         return vagaSelecionada ? (
           <JobDetails
             vaga={vagaSelecionada}
-            favorita={ehFavorita(vagaSelecionada)}
-            onFavorite={() => alternarFavorito(vagaSelecionada)}
+            favorita={canManageFavorites ? ehFavorita(vagaSelecionada) : false}
+            onFavorite={canManageFavorites ? () => alternarFavorito(vagaSelecionada) : undefined}
             onBack={voltarParaHome}
           />
         ) : null;
 
       case 'Favorites':
+        if (!canManageFavorites) {
+          return (
+            <Home
+              vagas={vagas}
+              busca={busca}
+              setBusca={setBusca}
+              categoria={categoria}
+              setCategoria={setCategoria}
+              favoritos={favoritos}
+              ehFavorita={ehFavorita}
+              alternarFavorito={() => {}}
+              abrirDetalhes={abrirDetalhes}
+              abrirFiltros={() => setTela('Filters')}
+              abrirFavoritos={undefined}
+              onOpenAdmin={session.role === 'admin' ? abrirAdmin : null}
+              pesquisarNaGupy={pesquisarNaGupy}
+              filtros={filtros}
+              session={session}
+              onLogout={handleLogout}
+            />
+          );
+        }
+
         return (
           <Favorites
             vagas={favoritos}
@@ -293,10 +318,10 @@ export default function App() {
             setCategoria={setCategoria}
             favoritos={favoritos}
             ehFavorita={ehFavorita}
-            alternarFavorito={alternarFavorito}
+            alternarFavorito={canManageFavorites ? alternarFavorito : () => {}}
             abrirDetalhes={abrirDetalhes}
             abrirFiltros={() => setTela('Filters')}
-            abrirFavoritos={() => setTela('Favorites')}
+            abrirFavoritos={canManageFavorites ? () => setTela('Favorites') : undefined}
             onOpenAdmin={null}
             pesquisarNaGupy={pesquisarNaGupy}
             filtros={filtros}

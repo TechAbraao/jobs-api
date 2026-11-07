@@ -341,3 +341,36 @@ def test_user_registration_login_and_favorites(client):
     remove_favorite = client.delete("/auth/favorites", json={"username": "alice", "job_id": created_job["id"]})
     assert remove_favorite.status_code == 200
     assert remove_favorite.get_json()["user"]["favorite_jobs"] == []
+
+
+def test_admin_user_cannot_manage_favorites(client):
+    admin = client.post("/auth/login", json={"username": "admin", "password": "admin"})
+    assert admin.status_code == 200
+
+    created_job = client.post("/jobs", json=job_payload(title="Admin Favorite Job", company="Admin Co.")).get_json()["job"]
+
+    list_response = client.get("/auth/favorites", query_string={"username": "admin"})
+    assert list_response.status_code == 403
+
+    add_response = client.post("/auth/favorites", json={"username": "admin", "job_id": created_job["id"]})
+    assert add_response.status_code == 403
+
+    delete_response = client.delete("/auth/favorites", json={"username": "admin", "job_id": created_job["id"]})
+    assert delete_response.status_code == 403
+
+
+def test_list_users_returns_username_and_favorite_jobs(client):
+    register = client.post("/auth/register", json={"username": "alice", "password": "secret123"})
+    assert register.status_code == 201
+
+    created_job = client.post("/jobs", json=job_payload(title="Favorite Job", company="Favorite Co.")).get_json()["job"]
+    client.post("/auth/favorites", json={"username": "alice", "job_id": created_job["id"]})
+
+    response = client.get("/auth/users")
+    assert response.status_code == 200
+
+    body = response.get_json()
+    users = {user["username"]: user for user in body["users"]}
+    assert "alice" in users
+    assert users["alice"]["favorite_jobs"] == [created_job["id"]]
+    assert users["alice"]["role"] == "user"

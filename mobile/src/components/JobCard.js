@@ -49,13 +49,15 @@ export default function JobCard({
           </Text>
         </View>
 
-        <TouchableOpacity onPress={onFavorite} hitSlop={8}>
-          <Ionicons
-            name={favorita ? 'heart' : 'heart-outline'}
-            size={21}
-            color={favorita ? BLUE : '#8491A7'}
-          />
-        </TouchableOpacity>
+        {onFavorite ? (
+          <TouchableOpacity onPress={onFavorite} hitSlop={8}>
+            <Ionicons
+              name={favorita ? 'heart' : 'heart-outline'}
+              size={21}
+              color={favorita ? BLUE : '#8491A7'}
+            />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <Text style={{ color: '#8792A6', fontSize: 10, marginTop: 10 }}>

@@ -85,6 +85,47 @@ def login_user():
     return jsonify({"user": user.to_dict()}), 200
 
 
+@auth_rts.route("/users", methods=["GET"])
+def list_users():
+    try:
+        users = auth_ctr.list_users()
+    except Exception:
+        current_app.logger.exception("Failed to list users")
+        return _error("Não foi possível consultar os usuários.", 500)
+
+    serialized_users = []
+    for user in users:
+        favorite_jobs = list(user.favorite_jobs or []) if user.role != "admin" else []
+        serialized_users.append({
+            "id": str(user.id),
+            "username": user.username,
+            "role": user.role,
+            "favorite_jobs": [str(job_id) for job_id in favorite_jobs],
+        })
+
+    return jsonify({"users": serialized_users}), 200
+
+
+@auth_rts.route("/users/<user_id>", methods=["DELETE"])
+def delete_user_route(user_id: str):
+    try:
+        parsed_user_id = uuid.UUID(str(user_id))
+    except ValueError:
+        return _error("user_id deve ser um UUID válido.", 400)
+
+    try:
+        deleted = auth_ctr.delete_user_by_id(parsed_user_id)
+    except auth_ctr.UserNotFoundError:
+        return _error("Usuário não encontrado.", 404)
+    except ValueError as error:
+        return _error(str(error), 403 if "admin" in str(error).lower() else 400)
+    except Exception:
+        current_app.logger.exception("Failed to delete user")
+        return _error("Não foi possível remover o usuário.", 500)
+
+    return jsonify({"message": "Usuário removido com sucesso.", "user": deleted.to_dict()}), 200
+
+
 @auth_rts.route("/favorites", methods=["GET"])
 def list_favorites():
     username = request.args.get("username")
@@ -94,6 +135,8 @@ def list_favorites():
         jobs = auth_ctr.list_favorite_jobs(username)
     except auth_ctr.UserNotFoundError:
         return _error("Usuário não encontrado.", 404)
+    except ValueError as error:
+        return _error(str(error), 403)
     except Exception:
         current_app.logger.exception("Failed to list favorites")
         return _error("Não foi possível consultar os favoritos.", 500)
@@ -121,7 +164,12 @@ def manage_favorites():
     except auth_ctr.UserNotFoundError:
         return _error("Usuário não encontrado.", 404)
     except ValueError as error:
-        return _error(str(error), 404 if "job not found" in str(error).lower() else 400)
+        message = str(error)
+        if "job not found" in message.lower():
+            return _error(message, 404)
+        if "favoritos" in message.lower() or "admin" in message.lower():
+            return _error(message, 403)
+        return _error(message, 400)
     except Exception:
         current_app.logger.exception("Failed to update favorites")
         return _error("Não foi possível atualizar os favoritos.", 500)

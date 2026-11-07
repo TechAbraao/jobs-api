@@ -19,6 +19,7 @@ export default function JobDetails({
   onFavorite,
   onBack,
 }) {
+  const canToggleFavorite = Boolean(onFavorite);
   const requisitos = Array.isArray(vaga?.requisitos) && vaga.requisitos.length > 0 ? vaga.requisitos : ['N/A'];
   const beneficios = vaga?.beneficios || 'N/A';
   const salario = vaga?.salario || 'N/A';
@@ -64,13 +65,17 @@ export default function JobDetails({
             Detalhes da vaga
           </Text>
 
-          <TouchableOpacity onPress={onFavorite}>
-            <Ionicons
-              name={favorita ? 'heart' : 'heart-outline'}
-              size={23}
-              color="#1647C5"
-            />
-          </TouchableOpacity>
+          {canToggleFavorite ? (
+            <TouchableOpacity onPress={onFavorite}>
+              <Ionicons
+                name={favorita ? 'heart' : 'heart-outline'}
+                size={23}
+                color="#1647C5"
+              />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 23, height: 23 }} />
+          )}
         </View>
 
         <View

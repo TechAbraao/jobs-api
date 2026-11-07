@@ -11,6 +11,8 @@
     { "name": "Delete Job", "method": "DELETE", "url": "{{baseUrl}}/jobs/{{jobId}}" },
     { "name": "Register User", "method": "POST", "url": "{{baseUrl}}/auth/register" },
     { "name": "Login User", "method": "POST", "url": "{{baseUrl}}/auth/login" },
+    { "name": "List Users", "method": "GET", "url": "{{baseUrl}}/auth/users" },
+    { "name": "Delete User", "method": "DELETE", "url": "{{baseUrl}}/auth/users/{{userId}}" },
     { "name": "List Favorites", "method": "GET", "url": "{{baseUrl}}/auth/favorites?username={{username}}" },
     { "name": "Add Favorite", "method": "POST", "url": "{{baseUrl}}/auth/favorites" },
     { "name": "Remove Favorite", "method": "DELETE", "url": "{{baseUrl}}/auth/favorites" }

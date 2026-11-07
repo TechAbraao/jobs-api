@@ -81,10 +81,16 @@ def authenticate_user(username: str, password: str) -> UsersMdl:
     return user
 
 
+def _ensure_user_can_manage_favorites(user: UsersMdl) -> None:
+    if user.role == "admin":
+        raise ValueError("Administradores não possuem lista de favoritos.")
+
+
 def add_favorite_job(username: str, job_id: uuid.UUID) -> UsersMdl:
     user = get_user_by_username(username)
     if user is None:
         raise UserNotFoundError
+    _ensure_user_can_manage_favorites(user)
     if database.session.get(JobsMdl, job_id) is None:
         raise ValueError("job not found")
 
@@ -100,6 +106,7 @@ def remove_favorite_job(username: str, job_id: uuid.UUID) -> UsersMdl:
     user = get_user_by_username(username)
     if user is None:
         raise UserNotFoundError
+    _ensure_user_can_manage_favorites(user)
     if database.session.get(JobsMdl, job_id) is None:
         raise ValueError("job not found")
 
@@ -112,10 +119,27 @@ def remove_favorite_job(username: str, job_id: uuid.UUID) -> UsersMdl:
     return user
 
 
+def delete_user_by_id(user_id: uuid.UUID) -> UsersMdl:
+    user = database.session.get(UsersMdl, user_id)
+    if user is None:
+        raise UserNotFoundError
+    if user.role == "admin":
+        raise ValueError("O usuário admin não pode ser removido.")
+
+    database.session.delete(user)
+    database.session.commit()
+    return user
+
+
+def list_users() -> list[UsersMdl]:
+    return database.session.query(UsersMdl).order_by(UsersMdl.username.asc()).all()
+
+
 def list_favorite_jobs(username: str) -> list[JobsMdl]:
     user = get_user_by_username(username)
     if user is None:
         raise UserNotFoundError
+    _ensure_user_can_manage_favorites(user)
 
     favorite_job_ids = user.favorite_jobs or []
     return [

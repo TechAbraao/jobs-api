@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 const BLUE = '#1647C5';
 
 export default function BottomTabs({ active, onSearch, onFavorites, onAdmin }) {
+  const hasFavoritesTab = Boolean(onFavorites);
+
   return (
     <View
       style={{
@@ -36,25 +38,27 @@ export default function BottomTabs({ active, onSearch, onFavorites, onAdmin }) {
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={onFavorites}
-        style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-      >
-        <Ionicons
-          name="heart-outline"
-          size={20}
-          color={active === 'Favorites' ? BLUE : '#98A3B6'}
-        />
-        <Text
-          style={{
-            color: active === 'Favorites' ? BLUE : '#8792A6',
-            fontSize: 10,
-            marginTop: 2,
-          }}
+      {hasFavoritesTab ? (
+        <TouchableOpacity
+          onPress={onFavorites}
+          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
         >
-          Favoritos
-        </Text>
-      </TouchableOpacity>
+          <Ionicons
+            name="heart-outline"
+            size={20}
+            color={active === 'Favorites' ? BLUE : '#98A3B6'}
+          />
+          <Text
+            style={{
+              color: active === 'Favorites' ? BLUE : '#8792A6',
+              fontSize: 10,
+              marginTop: 2,
+            }}
+          >
+            Favoritos
+          </Text>
+        </TouchableOpacity>
+      ) : null}
 
       {onAdmin ? (
         <TouchableOpacity
